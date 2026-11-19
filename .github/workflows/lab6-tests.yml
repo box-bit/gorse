@@ -1,0 +1,54 @@
+# Lab #6 - regression check for the refactored code: unit tests of the `master` package.
+# The upstream workflow (build_test.yml) needs MySQL, Postgres, MongoDB, ClickHouse,
+# Redis, S3, Milvus, ... and only runs on master/release branches. The `master`
+# package tests use SQLite in a temp directory, so they run here without services.
+name: Lab6 - master tests
+
+on:
+  push:
+    branches:
+      - semester-investigation
+      - 'lab6-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-master:
+    name: go test ./master/...
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Run master package tests
+        run: |
+          set -o pipefail
+          go test -count=1 -timeout 20m -v ./master/... 2>&1 | tee test-output.txt
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Lab 6 - master package tests"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Passed: **$(grep -cE -- '^ *--- PASS' test-output.txt || true)**"
+            echo "- Failed: **$(grep -cE -- '^ *--- FAIL' test-output.txt || true)**"
+            echo "- Skipped: **$(grep -cE -- '^ *--- SKIP' test-output.txt || true)**"
+            echo
+            echo '```'
+            grep -E '^(ok|FAIL|---)' test-output.txt | tail -20
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lab6-master-tests-${{ github.sha }}
+          path: test-output.txt

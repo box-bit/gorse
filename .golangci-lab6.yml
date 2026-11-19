@@ -1,0 +1,42 @@
+# Lab #6 (Software Quality and Metrics) - code-smell analysis config.
+# Separate from the project's own .golangci.yml on purpose: it enables only the
+# linters that give evidence for the selected smells, with fixed thresholds, so
+# the baseline and after-refactoring runs use exactly the same measurement.
+version: "2"
+
+run:
+  tests: false # analyze production code only (no *_test.go)
+
+linters:
+  default: none
+  enable:
+    - funlen   # Long Method: lines / statements per function
+    - gocyclo  # Long Method: cyclomatic complexity
+    - gocognit # Long Method: cognitive complexity
+    - nestif   # Long Method: deeply nested if-statements
+    - dupl     # Duplicated Code: token-based clone detection
+    - revive   # Long Parameter List: argument-limit / function-result-limit
+  settings:
+    funlen:
+      lines: 60       # golangci-lint default
+      statements: 40  # golangci-lint default
+    gocyclo:
+      min-complexity: 15 # report functions with complexity > 15
+    gocognit:
+      min-complexity: 15 # SonarSource's default threshold for cognitive complexity
+    nestif:
+      min-complexity: 5 # golangci-lint default
+    dupl:
+      threshold: 100 # tokens; lower than the default (150) to also catch medium-size clones
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: argument-limit
+          arguments: [5]
+        - name: function-result-limit
+          arguments: [3]
+
+issues:
+  max-issues-per-linter: 0 # report everything (no truncation)
+  max-same-issues: 0
+  uniq-by-line: false # keep every linter's finding, even when several flag the same function line

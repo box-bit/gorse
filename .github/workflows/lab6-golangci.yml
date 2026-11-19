@@ -1,0 +1,76 @@
+# Lab #6 - code-smell static analysis of the `master` package with golangci-lint.
+# Runs on every push to the lab branches, so each run is tied to one commit SHA.
+name: Lab6 - golangci-lint
+
+on:
+  push:
+    branches:
+      - semester-investigation
+      - 'lab6-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_PATH: ./master/...
+  REPORT_DIR: lab6-report
+
+jobs:
+  golangci-lint:
+    name: smell analysis (master package)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Prepare report directory
+        run: mkdir -p "$REPORT_DIR"
+
+      # --issues-exit-code=0: the code already has findings; the report is the
+      # result, so the job stays green and the findings are inspected instead.
+      - name: Run golangci-lint (Lab 6 config)
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15.0
+          args: >-
+            --config=.golangci-lab6.yml
+            --issues-exit-code=0
+            --output.text.path=stdout
+            --output.json.path=${{ env.REPORT_DIR }}/golangci-lint.json
+            ${{ env.SOURCE_PATH }}
+
+      - name: Write summary (counts per linter and full findings list)
+        run: |
+          R="$REPORT_DIR/golangci-lint.json"
+          {
+            echo "## Lab 6 - golangci-lint results"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Branch: \`${GITHUB_REF_NAME}\`"
+            echo "- Scope: \`${SOURCE_PATH}\` (non-test code), config \`.golangci-lab6.yml\`"
+            echo "- Total findings: **$(jq '.Issues | length' "$R")**"
+            echo
+            echo "| Linter | Findings |"
+            echo "|---|---|"
+            jq -r '.Issues | group_by(.FromLinter)[] | "| \(.[0].FromLinter) | \(length) |"' "$R"
+            echo
+            echo "<details><summary>All findings</summary>"
+            echo
+            echo "| Linter | Location | Message |"
+            echo "|---|---|---|"
+            jq -r '.Issues | sort_by(.Pos.Filename, .Pos.Line)[]
+              | "| \(.FromLinter) | `\(.Pos.Filename):\(.Pos.Line)` | \(.Text | gsub("\\|"; "\\\\|")) |"' "$R"
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cp "$GITHUB_STEP_SUMMARY" "$REPORT_DIR/summary.md"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: lab6-golangci-report-${{ github.sha }}
+          path: ${{ env.REPORT_DIR }}/
