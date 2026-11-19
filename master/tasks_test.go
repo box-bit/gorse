@@ -720,3 +720,57 @@ func (s *MasterTestSuite) TestLoadDataFromDatabaseInParallel() {
 	s.Equal(numItems, datasets.clickTrainSet.PositiveCount+datasets.clickTestSet.PositiveCount)
 	s.Equal(0, datasets.clickTrainSet.NegativeCount+datasets.clickTestSet.NegativeCount)
 }
+
+// TestLoadDataFromDatabaseLabels pins down how LoadDataFromDatabase indexes user and
+// item labels: a label gets an index only if at least two users (items) have it, and at
+// its second occurrence it is also added back to the first user (item) that had it.
+// Existing tests only check the number of labels, not which labels each user/item gets.
+func (s *MasterTestSuite) TestLoadDataFromDatabaseLabels() {
+	ctx := s.T().Context()
+	s.NoError(s.DataClient.BatchInsertUsers(ctx, []data.User{
+		{UserId: "u1", Labels: []string{"a", "x"}},      // first "a"; "x" appears only once
+		{UserId: "u2", Labels: []string{"a", "b"}},      // second "a" -> also added back to u1
+		{UserId: "u3", Labels: []string{"b", "a", "y"}}, // second "b" -> also added back to u2
+		{UserId: "u4"}, // no labels
+	}))
+	s.NoError(s.DataClient.BatchInsertItems(ctx, []data.Item{
+		{ItemId: "i1", Labels: map[string]any{"genre": "comedy", "year": "1995"}},
+		{ItemId: "i2", Labels: map[string]any{"genre": "comedy", "mood": "happy"}},
+		{ItemId: "i3", Labels: map[string]any{"genre": "drama", "mood": "happy"}},
+		{ItemId: "i4", Labels: []string{"tag"}},
+	}))
+
+	ctrDataset, dataSet, err := s.LoadDataFromDatabase(ctx, s.DataClient,
+		[]expression.FeedbackTypeExpression{expression.MustParseFeedbackTypeExpression("positive")},
+		nil, nil, 0, 0, NewOnlineEvaluator(nil, nil), nil)
+	s.NoError(err)
+
+	// decode returns the labels of one user/item as "name=value" strings.
+	decode := func(names []string, labels []lo.Tuple2[int32, float32]) []string {
+		result := make([]string, 0, len(labels))
+		for _, label := range labels {
+			result = append(result, fmt.Sprintf("%s=%g", names[label.A], label.B))
+		}
+		return result
+	}
+
+	// user labels: only "a" and "b" appear at least twice
+	s.ElementsMatch([]string{"a", "b"}, ctrDataset.Index.GetUserLabels())
+	userLabels := func(userId string) []string {
+		return decode(ctrDataset.Index.GetUserLabels(), ctrDataset.UserLabels[dataSet.GetUserDict().Id(userId)])
+	}
+	s.ElementsMatch([]string{"a=1"}, userLabels("u1"))
+	s.ElementsMatch([]string{"a=1", "b=1"}, userLabels("u2"))
+	s.ElementsMatch([]string{"a=1", "b=1"}, userLabels("u3"))
+	s.Empty(userLabels("u4"))
+
+	// item labels: only "genre.comedy" and "mood.happy" appear at least twice
+	s.ElementsMatch([]string{"genre.comedy", "mood.happy"}, ctrDataset.Index.GetItemLabels())
+	itemLabels := func(itemId string) []string {
+		return decode(ctrDataset.Index.GetItemLabels(), ctrDataset.ItemLabels[dataSet.GetItemDict().Id(itemId)])
+	}
+	s.ElementsMatch([]string{"genre.comedy=1"}, itemLabels("i1"))
+	s.ElementsMatch([]string{"genre.comedy=1", "mood.happy=1"}, itemLabels("i2")) // "mood.happy" added back at i3
+	s.ElementsMatch([]string{"mood.happy=1"}, itemLabels("i3"))
+	s.Empty(itemLabels("i4"))
+}
