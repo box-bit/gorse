@@ -270,6 +270,58 @@ func (m *Master) runLoadDatasetTask(ctx context.Context) error {
 	return nil
 }
 
+// labelIndexer collects the labels of users (or items) while they are loaded one by one.
+// A label gets a number in index only when at least two users (items) have it, because a
+// label of a single user (item) is useless as a model feature. The stream cannot look ahead,
+// so the first user (item) with a label is remembered, and the label is added to it at the
+// label's second occurrence.
+type labelIndexer struct {
+	count  map[string]int                // number of users (items) that have the label so far
+	first  map[string]int32              // first user (item) that had the label
+	index  *dataset.Index                // numbers of the labels that appear at least twice
+	labels [][]lo.Tuple2[int32, float32] // labels (number, value) of each user (item)
+}
+
+func newLabelIndexer(capacity int) *labelIndexer {
+	return &labelIndexer{
+		count:  make(map[string]int),
+		first:  make(map[string]int32),
+		index:  dataset.NewMapIndex(),
+		labels: make([][]lo.Tuple2[int32, float32], 0, capacity),
+	}
+}
+
+// add records the labels of the user (item) with number entityIndex.
+func (l *labelIndexer) add(entityIndex int32, features []ctr.Label) {
+	if len(l.labels) == int(entityIndex) {
+		l.labels = append(l.labels, nil)
+	}
+	l.labels[entityIndex] = make([]lo.Tuple2[int32, float32], 0, len(features))
+	for _, feature := range features {
+		l.count[feature.Name]++
+		// Memorize the first occurrence.
+		if l.count[feature.Name] == 1 {
+			l.first[feature.Name] = entityIndex
+		}
+		// Add the label to the index in second occurrence.
+		if l.count[feature.Name] == 2 {
+			l.index.Add(feature.Name)
+			firstIndex := l.first[feature.Name]
+			l.labels[firstIndex] = append(l.labels[firstIndex], lo.Tuple2[int32, float32]{
+				A: l.index.ToNumber(feature.Name),
+				B: feature.Value,
+			})
+		}
+		// Add the label to the user (item).
+		if l.count[feature.Name] > 1 {
+			l.labels[entityIndex] = append(l.labels[entityIndex], lo.Tuple2[int32, float32]{
+				A: l.index.ToNumber(feature.Name),
+				B: feature.Value,
+			})
+		}
+	}
+}
+
 // LoadDataFromDatabase loads dataset from data store.
 func (m *Master) LoadDataFromDatabase(
 	ctx context.Context,
@@ -311,44 +363,14 @@ func (m *Master) LoadDataFromDatabase(
 	}
 
 	// STEP 1: pull users
-	userLabelCount := make(map[string]int)
-	userLabelFirst := make(map[string]int32)
-	userLabelIndex := dataset.NewMapIndex()
-	userLabels := make([][]lo.Tuple2[int32, float32], 0, estimatedNumUsers)
+	userLabels := newLabelIndexer(estimatedNumUsers)
 	start := time.Now()
 	userChan, errChan := database.GetUserStream(newCtx, batchSize)
 	for users := range userChan {
 		for _, user := range users {
 			dataSet.AddUser(user)
 			userIndex := dataSet.GetUserDict().Id(user.UserId)
-			if len(userLabels) == int(userIndex) {
-				userLabels = append(userLabels, nil)
-			}
-			features := ctr.ConvertLabels(user.Labels)
-			userLabels[userIndex] = make([]lo.Tuple2[int32, float32], 0, len(features))
-			for _, feature := range features {
-				userLabelCount[feature.Name]++
-				// Memorize the first occurrence.
-				if userLabelCount[feature.Name] == 1 {
-					userLabelFirst[feature.Name] = userIndex
-				}
-				// Add the label to the index in second occurrence.
-				if userLabelCount[feature.Name] == 2 {
-					userLabelIndex.Add(feature.Name)
-					firstUserIndex := userLabelFirst[feature.Name]
-					userLabels[firstUserIndex] = append(userLabels[firstUserIndex], lo.Tuple2[int32, float32]{
-						A: userLabelIndex.ToNumber(feature.Name),
-						B: feature.Value,
-					})
-				}
-				// Add the label to the user.
-				if userLabelCount[feature.Name] > 1 {
-					userLabels[userIndex] = append(userLabels[userIndex], lo.Tuple2[int32, float32]{
-						A: userLabelIndex.ToNumber(feature.Name),
-						B: feature.Value,
-					})
-				}
-			}
+			userLabels.add(userIndex, ctr.ConvertLabels(user.Labels))
 		}
 		span.Add(len(users))
 	}
@@ -357,16 +379,13 @@ func (m *Master) LoadDataFromDatabase(
 	}
 	log.Logger().Debug("pulled users from database",
 		zap.Int("n_users", dataSet.CountUsers()),
-		zap.Int32("n_user_labels", userLabelIndex.Len()),
+		zap.Int32("n_user_labels", userLabels.index.Len()),
 		zap.Duration("used_time", time.Since(start)))
 	LoadDatasetStepSecondsVec.WithLabelValues("load_users").Set(time.Since(start).Seconds())
 
 	// STEP 2: pull items
 	items := make([]data.Item, 0, estimatedNumItems)
-	itemLabelCount := make(map[string]int)
-	itemLabelFirst := make(map[string]int32)
-	itemLabelIndex := dataset.NewMapIndex()
-	itemLabels := make([][]lo.Tuple2[int32, float32], 0, estimatedNumItems)
+	itemLabels := newLabelIndexer(estimatedNumItems)
 	itemEmbeddingIndexer := dataset.NewMapIndex()
 	itemEmbeddingDimension := make([]map[int]int, 0)
 	itemEmbeddings := make([][][]uint16, 0, estimatedNumItems)
@@ -377,38 +396,11 @@ func (m *Master) LoadDataFromDatabase(
 		for _, item := range batchItems {
 			dataSet.AddItem(item)
 			itemIndex := dataSet.GetItemDict().Id(item.ItemId)
-			if len(itemLabels) == int(itemIndex) {
-				itemLabels = append(itemLabels, nil)
-			}
 			if len(itemEmbeddings) == int(itemIndex) {
 				itemEmbeddings = append(itemEmbeddings, nil)
 			}
 			// load labels
-			labels := ctr.ConvertLabels(item.Labels)
-			itemLabels[itemIndex] = make([]lo.Tuple2[int32, float32], 0, len(labels))
-			for _, feature := range labels {
-				itemLabelCount[feature.Name]++
-				// Memorize the first occurrence.
-				if itemLabelCount[feature.Name] == 1 {
-					itemLabelFirst[feature.Name] = itemIndex
-				}
-				// Add the label to the index in second occurrence.
-				if itemLabelCount[feature.Name] == 2 {
-					itemLabelIndex.Add(feature.Name)
-					firstItemIndex := itemLabelFirst[feature.Name]
-					itemLabels[firstItemIndex] = append(itemLabels[firstItemIndex], lo.Tuple2[int32, float32]{
-						A: itemLabelIndex.ToNumber(feature.Name),
-						B: feature.Value,
-					})
-				}
-				// Add the label to the item.
-				if itemLabelCount[feature.Name] > 1 {
-					itemLabels[itemIndex] = append(itemLabels[itemIndex], lo.Tuple2[int32, float32]{
-						A: itemLabelIndex.ToNumber(feature.Name),
-						B: feature.Value,
-					})
-				}
-			}
+			itemLabels.add(itemIndex, ctr.ConvertLabels(item.Labels))
 			// load embeddings
 			embeddings := ctr.ConvertEmbeddings(item.Labels)
 			itemEmbeddings[itemIndex] = make([][]uint16, 0, len(embeddings))
@@ -432,7 +424,7 @@ func (m *Master) LoadDataFromDatabase(
 	}
 	log.Logger().Debug("pulled items from database",
 		zap.Int("n_items", dataSet.CountItems()),
-		zap.Int32("n_item_labels", itemLabelIndex.Len()),
+		zap.Int32("n_item_labels", itemLabels.index.Len()),
 		zap.Duration("used_time", time.Since(start)))
 	LoadDatasetStepSecondsVec.WithLabelValues("load_items").Set(time.Since(start).Seconds())
 
@@ -670,12 +662,12 @@ func (m *Master) LoadDataFromDatabase(
 	unifiedIndex := dataset.NewUnifiedMapIndexBuilder()
 	unifiedIndex.ItemIndex = dataSet.GetItemDict().ToIndex()
 	unifiedIndex.UserIndex = dataSet.GetUserDict().ToIndex()
-	unifiedIndex.ItemLabelIndex = itemLabelIndex
-	unifiedIndex.UserLabelIndex = userLabelIndex
+	unifiedIndex.ItemLabelIndex = itemLabels.index
+	unifiedIndex.UserLabelIndex = userLabels.index
 	ctrDataset = &ctr.Dataset{
 		Index:      unifiedIndex.Build(),
-		UserLabels: userLabels,
-		ItemLabels: itemLabels,
+		UserLabels: userLabels.labels,
+		ItemLabels: itemLabels.labels,
 		Users:      make([]int32, 0, estimatedNumFeedbacks),
 		Items:      make([]int32, 0, estimatedNumFeedbacks),
 		Target:     make([]float32, 0, estimatedNumFeedbacks),
