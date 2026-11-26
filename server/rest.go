@@ -631,6 +631,12 @@ func (s *RestServer) SearchDocuments(collection, subset string, categories []str
 		BadRequest(response, err)
 		return
 	}
+	// A negative n used to fall through to an unbounded query and return the whole
+	// list. Reject it so that the size of a response is always bounded by the request.
+	if n < 0 {
+		BadRequest(response, errors.Errorf("invalid n parameter: must be non-negative, got %d", n))
+		return
+	}
 	userId = request.QueryParameter("user-id")
 
 	readItems := mapset.NewSet[string]()
