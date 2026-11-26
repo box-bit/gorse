@@ -1,0 +1,14 @@
+repository:        box-bit/gorse
+ref:               refs/heads/lab7-deploy-verify
+GITHUB_SHA:        def09661903811100f281554fa9753106f18127d
+checkout HEAD:     def09661903811100f281554fa9753106f18127d
+working tree:      0 modified files
+os:                Ubuntu 24.04.5 LTS (Linux 7.0.0-1017-azure x86_64)
+runner image:      ubuntu24 20261116.376.1
+go:                go version go1.26.11 linux/amd64
+module:            github.com/gorse-io/gorse @ /home/runner/work/gorse/gorse
+server package:    /home/runner/work/gorse/gorse/server
+sha256 rest.go:    6c789f3780690f84c3467f84e64688799b8de385e0e2374956fdc39adc07fcd9
+claimed contract:  legacy (counter-check: bounded)
+build time: 107s
+ready after 1s: {"Ready":true,"DataStoreError":null,"CacheStoreError":null,"DataStoreConnected":true,"CacheStoreConnected":true}

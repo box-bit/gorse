@@ -1,0 +1,5 @@
+contract under check: legacy (checks: negative_n)
+LAB7 E2E {"case":"negative_n","query":"?n=-1","status":400,"count":0,"ids":"","body":"invalid n parameter: must be non-negative, got -1","contract":"legacy"}
+  FAIL negative_n status (legacy): expected '200', got '400'
+  FAIL negative_n count (legacy: whole leaderboard): expected '15', got '0'
+failures: 2

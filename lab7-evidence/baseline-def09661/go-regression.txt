@@ -1,0 +1,3 @@
+go: downloading github.com/madflojo/testcerts v1.5.0
+ok  	github.com/gorse-io/gorse/server	0.498s
+ok  	github.com/gorse-io/gorse/master	10.290s
