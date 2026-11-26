@@ -88,7 +88,7 @@ if n < 0 {
 
 | GitHub evidence | Link |
 |---|---|
-| Lab #7 pull request (within your fork) | PR_TBD |
+| Lab #7 pull request (within your fork) | <https://github.com/box-bit/gorse/pull/1> |
 | **Merged commit** on `semester-investigation` | MERGE_TBD |
 | Final `LAB7_ANALYSIS.md` on merged branch | <https://github.com/box-bit/gorse/blob/semester-investigation/LAB7_ANALYSIS.md> |
 | Student 1 meaningful commit(s) | Ondrej Müller (@Hogigo): [`def09661`](https://github.com/box-bit/gorse/commit/def09661903811100f281554fa9753106f18127d) (workflow + checks, baseline), [`6b17ddc3`](https://github.com/box-bit/gorse/commit/6b17ddc3504a61549dee9f03b6dc1ada9714f1d4) (behaviour change) |
