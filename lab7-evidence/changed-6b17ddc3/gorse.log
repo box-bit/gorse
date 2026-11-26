@@ -1,0 +1,34 @@
+{"level":"info","ts":1795706916.7777512,"msg":"load config","config":"gorse-lab7.toml"}
+{"level":"info","ts":1795706917.9378448,"msg":"start rpc server","host":"127.0.0.1","port":8086,"ssl_mode":false,"ssl_ca":"","ssl_cert":"","ssl_key":""}
+{"level":"info","ts":1795706917.9379945,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706917.9400332,"msg":"start http server","url":"http://127.0.0.1:8088","cors_methods":["GET","POST","PUT","DELETE","PATCH"],"cors_domains":[".*"]}
+{"level":"info","ts":1795706918.1487443,"msg":"ranking recommendation","n_working_users":0,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706918.1487823,"msg":"complete ranking recommendation","used_time":"4.557µs"}
+{"level":"info","ts":1795706918.535436,"msg":"GET /api/health/ready","request_id":"2377ab5b-0de9-4978-9f9d-f6f5c8e027f2","status_code":200,"response_time":0.000152258,"remote_addr":"127.0.0.1:35880"}
+{"level":"info","ts":1795706918.8578565,"msg":"batch insert items","request_id":"0b87a8aa-1ada-4d12-9ecb-ab61e58af63d","load_existed_items_time":0.000347379,"parse_timestamp_time":0.003803599,"insert_items_time":0.137453387,"insert_cache_time":0.00908007}
+{"level":"info","ts":1795706918.8579147,"msg":"POST /api/items","request_id":"0b87a8aa-1ada-4d12-9ecb-ab61e58af63d","status_code":200,"response_time":0.150856002,"remote_addr":"127.0.0.1:35888"}
+{"level":"info","ts":1795706919.129348,"msg":"Insert feedback successfully","request_id":"0a7e3bf5-7f0c-463e-aa40-1d1138786d82","num_feedback":121}
+{"level":"info","ts":1795706919.129461,"msg":"POST /api/feedback","request_id":"0a7e3bf5-7f0c-463e-aa40-1d1138786d82","status_code":200,"response_time":0.264327701,"remote_addr":"127.0.0.1:35904"}
+{"level":"info","ts":1795706919.1395943,"msg":"GET /api/non-personalized/most_starred","request_id":"5c1ea2da-4772-497a-b65c-faa6e46d595d","status_code":200,"response_time":0.000389492,"remote_addr":"127.0.0.1:35918"}
+{"level":"info","ts":1795706921.147845,"msg":"GET /api/non-personalized/most_starred","request_id":"76d15080-c117-4cb5-8041-09db39b8701b","status_code":200,"response_time":0.000436002,"remote_addr":"127.0.0.1:35834"}
+{"level":"info","ts":1795706923.1560233,"msg":"GET /api/non-personalized/most_starred","request_id":"a1aac0d2-9fea-4a0c-b7c2-7333e9ebf8e8","status_code":200,"response_time":0.000406619,"remote_addr":"127.0.0.1:35840"}
+{"level":"info","ts":1795706925.1641653,"msg":"GET /api/non-personalized/most_starred","request_id":"75e71d9f-61a9-499c-9c45-bf8d441da21f","status_code":200,"response_time":0.000416352,"remote_addr":"127.0.0.1:35852"}
+{"level":"info","ts":1795706926.7797701,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706926.7857952,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706926.8072088,"msg":"complete ranking recommendation","used_time":"21.393413ms"}
+{"level":"info","ts":1795706927.172524,"msg":"GET /api/non-personalized/most_starred","request_id":"34721017-1de7-444f-96ca-7e70ddd0662a","status_code":200,"response_time":0.000646156,"remote_addr":"127.0.0.1:35864"}
+{"level":"info","ts":1795706927.1936986,"msg":"GET /api/non-personalized/most_starred","request_id":"f068cb05-a7b9-4c0c-a67a-332bbf9640c4","status_code":200,"response_time":0.000593307,"remote_addr":"127.0.0.1:35874"}
+{"level":"info","ts":1795706927.2109535,"msg":"GET /api/non-personalized/most_starred","request_id":"9cb25628-1b38-483e-a210-a3bf3e686582","status_code":200,"response_time":0.00040816,"remote_addr":"127.0.0.1:35888"}
+{"level":"info","ts":1795706927.2339675,"msg":"GET /api/non-personalized/most_starred","request_id":"3910ad4e-52d5-48a5-b392-c7e090bb838a","status_code":200,"response_time":0.000513046,"remote_addr":"127.0.0.1:35894"}
+{"level":"error","ts":1795706927.2503946,"msg":"bad request","request_id":"195a5f53-86eb-4a28-86fd-a28e7c7df42c","error":"strconv.Atoi: parsing \"abc\": invalid syntax"}
+{"level":"info","ts":1795706927.2504275,"msg":"GET /api/non-personalized/most_starred","request_id":"195a5f53-86eb-4a28-86fd-a28e7c7df42c","status_code":400,"response_time":0.000156995,"remote_addr":"127.0.0.1:35904"}
+{"level":"error","ts":1795706927.2720633,"msg":"bad request","request_id":"cfd222e5-5732-4181-9c25-8a9655844242","error":"invalid n parameter: must be non-negative, got -1","errorVerbose":"github.com/gorse-io/gorse/server.(*RestServer).SearchDocuments:637: invalid n parameter: must be non-negative, got -1"}
+{"level":"info","ts":1795706927.272094,"msg":"GET /api/non-personalized/most_starred","request_id":"cfd222e5-5732-4181-9c25-8a9655844242","status_code":400,"response_time":0.000252607,"remote_addr":"127.0.0.1:35916"}
+{"level":"error","ts":1795706927.2985234,"msg":"bad request","request_id":"63e3277f-2e65-480b-a020-462eec311e20","error":"invalid n parameter: must be non-negative, got -1","errorVerbose":"github.com/gorse-io/gorse/server.(*RestServer).SearchDocuments:637: invalid n parameter: must be non-negative, got -1"}
+{"level":"info","ts":1795706927.2985556,"msg":"GET /api/non-personalized/most_starred","request_id":"63e3277f-2e65-480b-a020-462eec311e20","status_code":400,"response_time":0.000286818,"remote_addr":"127.0.0.1:35920"}
+{"level":"info","ts":1795706936.7867024,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706936.7920046,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706936.798837,"msg":"complete ranking recommendation","used_time":"6.808856ms"}
+{"level":"info","ts":1795706946.7884636,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706946.7940261,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706946.7991722,"msg":"complete ranking recommendation","used_time":"5.127506ms"}

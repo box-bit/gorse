@@ -1,0 +1,170 @@
+# Lab #7 - build gorse from THIS fork's commit on a fresh GitHub-hosted Ubuntu runner,
+# deploy it (gorse-in-one, SQLite stores, no external services), exercise the
+# non-personalized leaderboard API with fixed data, and verify the observable result.
+#
+# The changed case (n=-1) is checked against the contract claimed in
+# lab7/claimed-contract.txt, and also against the *other* contract, which must FAIL:
+# this shows that the checks distinguish the legacy and the bounded behaviour.
+name: Lab7 - deploy and verify leaderboard API
+
+on:
+  push:
+    branches:
+      - semester-investigation
+      - 'lab7-*'
+
+permissions:
+  contents: read
+
+env:
+  BASE_URL: http://127.0.0.1:8088
+
+jobs:
+  deploy-verify:
+    name: build, deploy and verify (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the fork at the pushed commit
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Record environment and source provenance
+        run: |
+          set -euo pipefail
+          # evidence lives outside the checkout so the source tree stays pristine
+          EVIDENCE="$RUNNER_TEMP/lab7-evidence"
+          echo "EVIDENCE=$EVIDENCE" >> "$GITHUB_ENV"
+          mkdir -p "$EVIDENCE"
+          claimed="$(tr -d '[:space:]' < lab7/claimed-contract.txt)"
+          case "$claimed" in legacy) other=bounded ;; bounded) other=legacy ;; *) echo "::error::bad contract $claimed"; exit 1 ;; esac
+          echo "CLAIMED_CONTRACT=$claimed" >> "$GITHUB_ENV"
+          echo "OTHER_CONTRACT=$other" >> "$GITHUB_ENV"
+          {
+            echo "repository:        $GITHUB_REPOSITORY"
+            echo "ref:               $GITHUB_REF"
+            echo "GITHUB_SHA:        $GITHUB_SHA"
+            echo "checkout HEAD:     $(git rev-parse HEAD)"
+            echo "working tree:      $(git status --porcelain | wc -l) modified files"
+            echo "os:                $(. /etc/os-release && echo "$PRETTY_NAME") ($(uname -srm))"
+            echo "runner image:      ${ImageOS:-?} ${ImageVersion:-?}"
+            echo "go:                $(go version)"
+            echo "module:            $(go list -m) @ $(go list -m -f '{{.Dir}}')"
+            echo "server package:    $(go list -f '{{.Dir}}' ./server)"
+            echo "sha256 rest.go:    $(sha256sum server/rest.go | cut -d' ' -f1)"
+            echo "claimed contract:  $claimed (counter-check: $other)"
+          } | tee "$EVIDENCE/provenance.txt"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Build gorse-in-one from the checked-out source
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gorse/mcache"
+          start=$(date +%s)
+          go build -o "$RUNNER_TEMP/gorse/gorse-in-one" ./cmd/gorse-in-one
+          echo "build time: $(( $(date +%s) - start ))s" | tee -a "$EVIDENCE/provenance.txt"
+          go version -m "$RUNNER_TEMP/gorse/gorse-in-one" | grep -E 'path|vcs' | tee "$EVIDENCE/binary-buildinfo.txt"
+          rev=$(go version -m "$RUNNER_TEMP/gorse/gorse-in-one" | awk '$2 ~ /^vcs.revision=/{print substr($2,14)}')
+          modified=$(go version -m "$RUNNER_TEMP/gorse/gorse-in-one" | awk '$2 ~ /^vcs.modified=/{print substr($2,14)}')
+          echo "binary vcs.revision=$rev vcs.modified=$modified"
+          test "$rev" = "$GITHUB_SHA"
+          test "$modified" = "false"
+
+      - name: Deploy - start gorse-in-one with SQLite stores
+        run: |
+          set -euo pipefail
+          cp lab7/gorse-lab7.toml "$RUNNER_TEMP/gorse/"
+          cd "$RUNNER_TEMP/gorse"
+          nohup ./gorse-in-one -c gorse-lab7.toml --cache-path ./mcache > gorse.log 2>&1 &
+          echo $! > gorse.pid
+          start=$(date +%s)
+          for _ in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/api/health/ready" > ready.json 2>/dev/null; then
+              echo "ready after $(( $(date +%s) - start ))s: $(jq -c . ready.json)" | tee -a "$EVIDENCE/provenance.txt"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::gorse-in-one did not become ready"; tail -50 gorse.log; exit 1
+
+      - name: Seed fixed items/feedback and wait for the leaderboard
+        run: lab7/e2e.sh seed "$BASE_URL" | tee "$EVIDENCE/e2e-seed.txt"
+        shell: bash
+
+      - name: E2E check against the claimed contract (must pass)
+        run: |
+          set -o pipefail
+          LAB7_RESULTS="$EVIDENCE/e2e-results.jsonl" lab7/e2e.sh check "$BASE_URL" "$CLAIMED_CONTRACT" | tee "$EVIDENCE/e2e-check.txt"
+
+      - name: E2E counter-check against the other contract (must FAIL)
+        run: |
+          set -o pipefail  # the if must see e2e.sh's exit status, not tee's
+          if ONLY=negative_n lab7/e2e.sh check "$BASE_URL" "$OTHER_CONTRACT" | tee "$EVIDENCE/e2e-counter-check.txt"; then
+            echo "::error::the $OTHER_CONTRACT expectation unexpectedly passed - the check cannot distinguish the versions"
+            exit 1
+          fi
+          echo "counter-check failed as expected: the deployed version does not satisfy the $OTHER_CONTRACT contract"
+
+      - name: Go functional test of the REST handler (claimed contract, must pass)
+        run: |
+          set -o pipefail
+          LAB7_RESULTS="$EVIDENCE/go-results.jsonl" go test -count=1 -v -run 'TestLab7' ./server/ 2>&1 | tee "$EVIDENCE/go-lab7.txt"
+
+      - name: Go counter-check against the other contract (must FAIL)
+        run: |
+          set -o pipefail  # the if must see go test's exit status, not tee's
+          if LAB7_CONTRACT="$OTHER_CONTRACT" go test -count=1 -v -run 'TestLab7NegativeLimit' ./server/ 2>&1 | tee "$EVIDENCE/go-counter-check.txt"; then
+            echo "::error::the $OTHER_CONTRACT expectation unexpectedly passed"
+            exit 1
+          fi
+          echo "counter-check failed as expected"
+
+      - name: Regression - all server and master package tests
+        run: |
+          set -o pipefail
+          go test -count=1 -timeout 20m ./server/... ./master/... 2>&1 | tee "$EVIDENCE/go-regression.txt"
+
+      - name: Stop gorse-in-one
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/gorse/gorse.pid" ]; then kill "$(cat "$RUNNER_TEMP/gorse/gorse.pid")" || true; fi
+          cp "$RUNNER_TEMP/gorse/gorse.log" "$EVIDENCE/gorse.log" 2>/dev/null || true
+
+      - name: Write summary
+        if: always()
+        run: |
+          set +e  # best effort: evidence files may be missing if an earlier step failed
+          {
+            echo "## Lab 7 - deploy and verify (\`${GITHUB_SHA::7}\`)"
+            echo
+            echo '```'
+            cat "$EVIDENCE/provenance.txt" 2>/dev/null
+            echo '```'
+            echo
+            echo "### Deployed gorse-in-one: GET /api/non-personalized/most_starred"
+            echo
+            echo "| case | query | status | count | ids / body |"
+            echo "|---|---|---|---|---|"
+            jq -r '"| \(.case) | `\(.query)` | \(.status) | \(.count) | \(if .status == 200 then .ids else .body end) |"' \
+              "$EVIDENCE/e2e-results.jsonl" 2>/dev/null
+            echo
+            echo "- E2E checks ($CLAIMED_CONTRACT): \`$(tail -1 "$EVIDENCE/e2e-check.txt" 2>/dev/null)\`"
+            echo "- E2E counter-check ($OTHER_CONTRACT, expected to fail): \`$(tail -1 "$EVIDENCE/e2e-counter-check.txt" 2>/dev/null)\`"
+            echo "- Go Lab7 tests: \`$(grep -E '^(ok|FAIL)' "$EVIDENCE/go-lab7.txt" 2>/dev/null | tail -1)\`"
+            echo "- Go counter-check (expected to fail): \`$(grep -E '^(ok|FAIL)' "$EVIDENCE/go-counter-check.txt" 2>/dev/null | tail -1)\`"
+            echo "- Regression:"
+            echo '```'
+            grep -E '^(ok|FAIL|---)' "$EVIDENCE/go-regression.txt" 2>/dev/null
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lab7-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/lab7-evidence/

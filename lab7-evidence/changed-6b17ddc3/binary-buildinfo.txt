@@ -1,0 +1,5 @@
+	path	github.com/gorse-io/gorse/cmd/gorse-in-one
+	build	vcs=git
+	build	vcs.revision=6b17ddc3504a61549dee9f03b6dc1ada9714f1d4
+	build	vcs.time=2026-11-26T15:14:18Z
+	build	vcs.modified=false

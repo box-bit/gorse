@@ -1,0 +1,16 @@
+contract under check: legacy (checks: all)
+LAB7 E2E {"case":"top_n","query":"?n=3","status":200,"count":3,"ids":"item-00,item-01,item-02","body":"","contract":"legacy"}
+  PASS top_n status
+  PASS top_n ids
+LAB7 E2E {"case":"default_n","query":"","status":200,"count":10,"ids":"item-00,item-01,item-02,item-03,item-04,item-05,item-06,item-07,item-08,item-09","body":"","contract":"legacy"}
+  PASS default_n status
+  PASS default_n ids (server.default_n=10)
+LAB7 E2E {"case":"exclude_read_items","query":"?n=3&user-id=alice","status":200,"count":3,"ids":"item-00,item-02,item-03","body":"","contract":"legacy"}
+  PASS exclude_read_items status
+  PASS exclude_read_items ids
+LAB7 E2E {"case":"non_numeric_n_rejected","query":"?n=abc","status":400,"count":0,"ids":"","body":"strconv.Atoi: parsing \"abc\": invalid syntax","contract":"legacy"}
+  PASS non_numeric_n_rejected status
+LAB7 E2E {"case":"negative_n","query":"?n=-1","status":200,"count":15,"ids":"item-00,item-01,item-02,item-03,item-04,item-05,item-06,item-07,item-08,item-09,item-10,item-11,item-12,item-13,item-14","body":"","contract":"legacy"}
+  PASS negative_n status (legacy)
+  PASS negative_n count (legacy: whole leaderboard)
+failures: 0

@@ -1,0 +1,36 @@
+{"level":"info","ts":1795706785.3000574,"msg":"load config","config":"gorse-lab7.toml"}
+{"level":"info","ts":1795706785.3357856,"msg":"start rpc server","host":"127.0.0.1","port":8086,"ssl_mode":false,"ssl_ca":"","ssl_cert":"","ssl_key":""}
+{"level":"info","ts":1795706785.3360007,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706785.339012,"msg":"start http server","url":"http://127.0.0.1:8088","cors_methods":["GET","POST","PUT","DELETE","PATCH"],"cors_domains":[".*"]}
+{"level":"info","ts":1795706785.3436034,"msg":"ranking recommendation","n_working_users":0,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706785.3436337,"msg":"complete ranking recommendation","used_time":"3.549µs"}
+{"level":"info","ts":1795706785.972631,"msg":"GET /api/health/ready","request_id":"257ec66a-70b4-4ad0-b830-7897219eebbd","status_code":200,"response_time":0.000187045,"remote_addr":"127.0.0.1:59636"}
+{"level":"info","ts":1795706786.0805082,"msg":"batch insert items","request_id":"c5de75c1-7fee-4a37-a596-6fa2f8d02811","load_existed_items_time":0.000495087,"parse_timestamp_time":0.003077071,"insert_items_time":0.001468514,"insert_cache_time":0.000659563}
+{"level":"info","ts":1795706786.0805762,"msg":"POST /api/items","request_id":"c5de75c1-7fee-4a37-a596-6fa2f8d02811","status_code":200,"response_time":0.00589948,"remote_addr":"127.0.0.1:59646"}
+{"level":"info","ts":1795706786.0942507,"msg":"Insert feedback successfully","request_id":"10541310-dc83-44cc-9530-fd6b02375c2c","num_feedback":121}
+{"level":"info","ts":1795706786.0942976,"msg":"POST /api/feedback","request_id":"10541310-dc83-44cc-9530-fd6b02375c2c","status_code":200,"response_time":0.006702017,"remote_addr":"127.0.0.1:59650"}
+{"level":"info","ts":1795706786.1038668,"msg":"GET /api/non-personalized/most_starred","request_id":"629d0f20-7ce2-4b23-8061-b14dd4959330","status_code":200,"response_time":0.000525641,"remote_addr":"127.0.0.1:59666"}
+{"level":"info","ts":1795706788.1138399,"msg":"GET /api/non-personalized/most_starred","request_id":"02388d54-83a6-41fc-a222-1d231de8f647","status_code":200,"response_time":0.000496727,"remote_addr":"127.0.0.1:59676"}
+{"level":"info","ts":1795706790.1227303,"msg":"GET /api/non-personalized/most_starred","request_id":"5c4c6718-f549-43de-a2ea-897b0640adad","status_code":200,"response_time":0.000515746,"remote_addr":"127.0.0.1:35852"}
+{"level":"info","ts":1795706792.1314366,"msg":"GET /api/non-personalized/most_starred","request_id":"faa84a95-fa5b-4af8-b8c2-85411619f905","status_code":200,"response_time":0.00050014,"remote_addr":"127.0.0.1:35866"}
+{"level":"info","ts":1795706794.1405663,"msg":"GET /api/non-personalized/most_starred","request_id":"76d8b363-c389-42b4-8301-fe7a70e9d062","status_code":200,"response_time":0.000504669,"remote_addr":"127.0.0.1:35874"}
+{"level":"info","ts":1795706795.301267,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706795.3116066,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706795.3418164,"msg":"complete ranking recommendation","used_time":"30.174867ms"}
+{"level":"info","ts":1795706796.1495934,"msg":"GET /api/non-personalized/most_starred","request_id":"d4278f52-e675-427f-b640-2fd81209cf13","status_code":200,"response_time":0.000729459,"remote_addr":"127.0.0.1:35888"}
+{"level":"info","ts":1795706796.174132,"msg":"GET /api/non-personalized/most_starred","request_id":"40f926ba-bb5f-413b-bcb5-caafe238ed06","status_code":200,"response_time":0.000659373,"remote_addr":"127.0.0.1:35898"}
+{"level":"info","ts":1795706796.1944344,"msg":"GET /api/non-personalized/most_starred","request_id":"b1aa1b0f-3d40-4b53-82fa-0fa8e45b2fb1","status_code":200,"response_time":0.000633786,"remote_addr":"127.0.0.1:35908"}
+{"level":"info","ts":1795706796.2290905,"msg":"GET /api/non-personalized/most_starred","request_id":"3ef2fb91-d002-4a3d-afcb-9c688db3f1ab","status_code":200,"response_time":0.000767534,"remote_addr":"127.0.0.1:35912"}
+{"level":"error","ts":1795706796.2483006,"msg":"bad request","request_id":"cfb80a61-8bd1-424d-8060-9b2d4506ef6d","error":"strconv.Atoi: parsing \"abc\": invalid syntax"}
+{"level":"info","ts":1795706796.2483397,"msg":"GET /api/non-personalized/most_starred","request_id":"cfb80a61-8bd1-424d-8060-9b2d4506ef6d","status_code":400,"response_time":0.000298306,"remote_addr":"127.0.0.1:35924"}
+{"level":"info","ts":1795706796.2618685,"msg":"GET /api/non-personalized/most_starred","request_id":"138c075b-3582-480e-a0d3-cc2b0a4ff3a1","status_code":200,"response_time":0.000692519,"remote_addr":"127.0.0.1:35934"}
+{"level":"info","ts":1795706796.2963033,"msg":"GET /api/non-personalized/most_starred","request_id":"585f8db1-db08-440c-a6a0-8a97297073df","status_code":200,"response_time":0.000712836,"remote_addr":"127.0.0.1:35940"}
+{"level":"info","ts":1795706805.3113952,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706805.5402515,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706805.7426605,"msg":"complete ranking recommendation","used_time":"202.351072ms"}
+{"level":"info","ts":1795706815.313366,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706815.3643298,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706815.383494,"msg":"complete ranking recommendation","used_time":"19.126848ms"}
+{"level":"info","ts":1795706825.3103795,"msg":"load dataset","positive_feedback_types":["star"],"negative_feedback_types":null,"read_feedback_types":["read"],"item_ttl":0,"feedback_ttl":0}
+{"level":"info","ts":1795706825.316495,"msg":"ranking recommendation","n_working_users":16,"n_jobs":1,"cache_size":100}
+{"level":"info","ts":1795706825.322328,"msg":"complete ranking recommendation","used_time":"5.802842ms"}

@@ -1,0 +1,6 @@
+{"case":"top_n","query":"?n=3","status":200,"count":3,"ids":["item-00","item-01","item-02"]}
+{"case":"default_n","query":"","status":200,"count":10,"ids":["item-00","item-01","item-02","item-03","item-04","item-05","item-06","item-07","item-08","item-09"]}
+{"case":"offset_n","query":"?offset=12\u0026n=5","status":200,"count":3,"ids":["item-12","item-13","item-14"]}
+{"case":"exclude_read_items","query":"?n=3\u0026user-id=alice","status":200,"count":3,"ids":["item-00","item-02","item-03"]}
+{"case":"non_numeric_n_rejected","query":"?n=abc","status":400,"count":0,"body":"strconv.Atoi: parsing \"abc\": invalid syntax"}
+{"case":"negative_n","query":"?n=-1","status":400,"count":0,"body":"invalid n parameter: must be non-negative, got -1","contract":"bounded"}
